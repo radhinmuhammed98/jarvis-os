@@ -1,0 +1,14 @@
+{
+  "system_name": "JARVIS OS",
+  "version": "0.1.0-milestone1",
+  "auto_boot": true,
+  "subsystems": {
+    "core": true,
+    "voice": true,
+    "agent": true,
+    "sandbox": true,
+    "memory": true,
+    "tools": true
+  },
+  "log_level": "INFO"
+}

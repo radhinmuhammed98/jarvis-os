@@ -1,0 +1,4 @@
+__pycache__/
+*.pyc
+os/build/
+.pytest_cache/

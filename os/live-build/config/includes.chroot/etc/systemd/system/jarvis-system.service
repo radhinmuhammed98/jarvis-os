@@ -1,0 +1,14 @@
+[Unit]
+Description=JARVIS OS System Layer Service
+After=multi-user.target sound.target network.target
+Wants=sound.target network.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/local/bin/jarvis-init
+StandardOutput=journal+console
+StandardError=journal+console
+
+[Install]
+WantedBy=multi-user.target

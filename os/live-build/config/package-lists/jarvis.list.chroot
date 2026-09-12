@@ -1,0 +1,50 @@
+# ==============================================================================
+# JARVIS OS - Minimal Package Manifest
+# Milestone 01: Kernel, Firmware, Audio, Networking, System Core
+# NO Desktop Environment / NO GUI
+# ==============================================================================
+
+# Linux Kernel & Core Firmware
+linux-image-amd64
+firmware-linux
+firmware-linux-free
+firmware-linux-nonfree
+firmware-misc-nonfree
+firmware-realtek
+firmware-atheros
+firmware-iwlwifi
+firmware-libertas
+
+# Base System Utilities
+systemd
+systemd-sysv
+dbus
+sudo
+curl
+wget
+ca-certificates
+pciutils
+usbutils
+lshw
+htop
+lm-sensors
+procps
+
+# Networking & Connectivity
+network-manager
+iproute2
+iputils-ping
+wireless-tools
+wpasupplicant
+
+# Audio Subsystem
+pipewire
+pipewire-audio
+wireplumber
+alsa-utils
+
+# Runtime Environment
+python3
+python3-pip
+python3-venv
+jq

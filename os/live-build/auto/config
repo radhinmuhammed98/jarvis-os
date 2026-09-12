@@ -1,0 +1,14 @@
+#!/bin/sh
+set -e
+
+lb config noauto \
+    --distribution bookworm \
+    --archive-areas "main contrib non-free non-free-firmware" \
+    --binary-images iso-hybrid \
+    --architectures amd64 \
+    --linux-flavours amd64 \
+    --bootloader syslinux \
+    --debian-installer false \
+    --apt-indices false \
+    --memtest none \
+    "${@}"
