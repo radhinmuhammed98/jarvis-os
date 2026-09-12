@@ -2,12 +2,22 @@
 set -e
 
 lb config noauto \
+    --mode debian \
     --distribution bookworm \
+    --mirror-bootstrap "http://deb.debian.org/debian" \
+    --parent-mirror-bootstrap "http://deb.debian.org/debian" \
+    --mirror-chroot "http://deb.debian.org/debian" \
+    --parent-mirror-chroot "http://deb.debian.org/debian" \
+    --mirror-binary "http://deb.debian.org/debian" \
+    --parent-mirror-binary "http://deb.debian.org/debian" \
+    --security false \
+    --firmware-chroot false \
+    --firmware-binary false \
     --archive-areas "main contrib non-free non-free-firmware" \
-    --binary-images iso-hybrid \
+    --binary-images iso \
     --architectures amd64 \
     --linux-flavours amd64 \
-    --bootloader syslinux \
+    --bootloader grub-live \
     --debian-installer false \
     --apt-indices false \
     --memtest none \
