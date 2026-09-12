@@ -21,19 +21,29 @@ class Message:
     timestamp: float = field(default_factory=time.time)
     metadata: Dict[str, Any] = field(default_factory=dict)
 
-class IntentType(str, Enum):
+class IntentCategory(str, Enum):
     CONVERSATION = "conversation"
-    SYSTEM_COMMAND = "system_command"
-    FILE_OPERATION = "file_operation"
-    CODE_EXECUTION = "code_execution"
-    UNKNOWN = "unknown"
+    QUESTION = "question"
+    INFORMATION_REQUEST = "information_request"
+    ACTION_REQUEST = "action_request"
+    AMBIGUOUS = "ambiguous"
+    CANCEL = "cancel"
+
+# Backward compatibility mapping
+IntentType = IntentCategory
 
 @dataclass
 class Intent:
-    intent_type: IntentType
+    category: IntentCategory
     confidence: float
     summary: str
     parameters: Dict[str, Any] = field(default_factory=dict)
+    requires_clarification: bool = False
+    clarification_prompt: Optional[str] = None
+
+    @property
+    def intent_type(self) -> IntentCategory:
+        return self.category
 
 @dataclass
 class ActionProposal:
@@ -47,8 +57,11 @@ class ActionProposal:
     description: str = ""
     target: str = ""
     parameters: Dict[str, Any] = field(default_factory=dict)
+    confidence: float = 1.0
     risk_level: str = "medium"  # low, medium, high, critical
     requires_confirmation: bool = True
+    validated: bool = False
+    validation_reason: str = ""
     created_at: float = field(default_factory=time.time)
 
 @dataclass

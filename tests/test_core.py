@@ -1,5 +1,5 @@
 import pytest
-from core.types import Role, Message, IntentType, ActionProposal
+from core.types import Role, Message, IntentCategory, ActionProposal
 from core.brain import BaseBrain
 from core.providers.mock import MockBrain
 from core.providers.ollama import OllamaBrain
@@ -17,7 +17,7 @@ def test_mock_brain_generation():
 def test_mock_brain_intent_and_action():
     brain = MockBrain()
     intent, action = brain.extract_intent_and_action("run ls -la", [])
-    assert intent.intent_type == IntentType.SYSTEM_COMMAND
+    assert intent.category == IntentCategory.ACTION_REQUEST
     assert action is not None
     assert action.action_type == "shell_execution"
     assert action.requires_confirmation is True
@@ -34,11 +34,11 @@ def test_conversation_context_trimming():
 def test_jarvis_core_service_mock_process():
     config = CoreConfig(provider="mock", model_name="mock-test")
     core = JarvisCore(config)
-    res = core.process_message("Please list files in system")
+    res = core.process_message("Open Chrome.")
     assert "text" in res
     assert res["executed"] is False
     assert res["action_proposal"] is not None
-    assert res["action_proposal"].action_type == "shell_execution"
+    assert res["action_proposal"].target.lower() == "chrome"
 
 def test_jarvis_core_stream_process():
     config = CoreConfig(provider="mock", model_name="mock-test")

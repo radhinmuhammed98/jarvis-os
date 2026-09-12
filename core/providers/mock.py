@@ -4,7 +4,7 @@ Mock Brain Provider for local offline testing and CI/CD validation.
 
 from typing import List, Generator, Optional, Tuple
 from core.brain import BaseBrain
-from core.types import Message, ResponseChunk, Intent, IntentType, ActionProposal
+from core.types import Message, ResponseChunk, Intent, IntentCategory, ActionProposal
 
 class MockBrain(BaseBrain):
     """Deterministically simulates AI responses and action proposals without external dependencies."""
@@ -29,7 +29,7 @@ class MockBrain(BaseBrain):
         lowered = user_input.lower()
         if "run" in lowered or "execute" in lowered or "list files" in lowered:
             intent = Intent(
-                intent_type=IntentType.SYSTEM_COMMAND,
+                category=IntentCategory.ACTION_REQUEST,
                 confidence=0.95,
                 summary="User requested file listing or command execution.",
                 parameters={"raw": user_input}
@@ -45,7 +45,7 @@ class MockBrain(BaseBrain):
             return intent, action
 
         intent = Intent(
-            intent_type=IntentType.CONVERSATION,
+            category=IntentCategory.CONVERSATION,
             confidence=0.99,
             summary="Standard conversational input",
             parameters={}

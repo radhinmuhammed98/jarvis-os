@@ -1,5 +1,6 @@
 """
 JARVIS Core Orchestrator Service
+Integrates IntentEngine and ValidationGate
 """
 
 import logging
@@ -10,21 +11,25 @@ from core.providers.mock import MockBrain
 from core.providers.ollama import OllamaBrain
 from core.context import ConversationContext
 from core.config import CoreConfig
-from core.types import Role, Message, ResponseChunk, Intent, ActionProposal
+from core.types import Role, Message, ResponseChunk, Intent, IntentCategory, ActionProposal
+from agent.intent_engine import IntentEngine
+from agent.validation_gate import ValidationGate
 
 logger = logging.getLogger("jarvis-core")
 
 class JarvisCore:
     """
     JARVIS Core Orchestrator Process.
-    Receives user input, manages context, communicates with the abstract Brain interface,
-    and cleanly separates conversational output from proposed actions.
+    Receives user input, manages context, uses IntentEngine & ValidationGate,
+    and communicates with the abstract Brain interface.
     NEVER executes action proposals directly.
     """
 
     def __init__(self, config: Optional[CoreConfig] = None):
         self.config = config or CoreConfig.load()
         self.brain: BaseBrain = self._init_brain()
+        self.intent_engine = IntentEngine()
+        self.validation_gate = ValidationGate()
         self.context = ConversationContext(
             max_messages=self.config.max_history,
             system_instruction=self.config.system_prompt
@@ -43,41 +48,73 @@ class JarvisCore:
 
     def process_message(self, user_text: str) -> Dict[str, Any]:
         """
-        Process user message synchronously.
+        Process user message synchronously through IntentEngine and ValidationGate.
         Returns dict containing response text, Intent, and Optional[ActionProposal].
         """
-        self.context.add_message(Role.USER, user_text)
         messages = self.context.get_messages()
 
-        # Step 1: Extract intent & action proposal without executing anything
-        intent, action_proposal = self.brain.extract_intent_and_action(user_text, messages)
+        # Step 1: Analyze intent and resolve context
+        intent, action_proposal = self.intent_engine.analyze(user_text, messages)
 
-        # Step 2: Generate conversation response
-        chunk = self.brain.generate_response(messages, system_prompt=self.config.system_prompt)
+        # Step 2: Pass through ValidationGate if proposal generated
+        validated_proposal = None
+        if action_proposal:
+            valid, reason, validated_proposal = self.validation_gate.validate(intent, action_proposal)
 
-        # Save assistant response to history
-        self.context.add_message(Role.ASSISTANT, chunk.text)
+        # Step 3: Handle clarification prompts or conversational responses
+        if intent.requires_clarification and intent.clarification_prompt:
+            reply_text = intent.clarification_prompt
+        elif intent.category == IntentCategory.CANCEL:
+            reply_text = "Understood. Action cancelled."
+        else:
+            self.context.add_message(Role.USER, user_text)
+            chunk = self.brain.generate_response(self.context.get_messages(), system_prompt=self.config.system_prompt)
+            reply_text = chunk.text
+            self.context.add_message(Role.ASSISTANT, reply_text)
 
         return {
-            "text": chunk.text,
+            "text": reply_text,
             "intent": intent,
-            "action_proposal": action_proposal,
-            "executed": False  # Explicitly guarantee no auto-execution
+            "action_proposal": validated_proposal or action_proposal,
+            "executed": False  # Explicit guarantee: 0 action execution
         }
 
     def process_message_stream(self, user_text: str) -> Generator[ResponseChunk, None, None]:
         """
         Stream conversational response tokens to caller in real-time.
-        Emits final chunk containing intent and optional action proposal.
+        Passes through IntentEngine and ValidationGate.
         NEVER executes any actions.
         """
-        self.context.add_message(Role.USER, user_text)
         messages = self.context.get_messages()
 
-        intent, action_proposal = self.brain.extract_intent_and_action(user_text, messages)
+        intent, action_proposal = self.intent_engine.analyze(user_text, messages)
 
+        validated_proposal = None
+        if action_proposal:
+            valid, reason, validated_proposal = self.validation_gate.validate(intent, action_proposal)
+
+        if intent.requires_clarification and intent.clarification_prompt:
+            yield ResponseChunk(
+                text=intent.clarification_prompt,
+                is_final=True,
+                intent=intent,
+                action_proposal=None
+            )
+            return
+
+        if intent.category == IntentCategory.CANCEL:
+            yield ResponseChunk(
+                text="Understood. Action cancelled.",
+                is_final=True,
+                intent=intent,
+                action_proposal=None
+            )
+            return
+
+        self.context.add_message(Role.USER, user_text)
         accumulated_text = []
-        for chunk in self.brain.stream_response(messages, system_prompt=self.config.system_prompt):
+
+        for chunk in self.brain.stream_response(self.context.get_messages(), system_prompt=self.config.system_prompt):
             accumulated_text.append(chunk.text)
             if chunk.is_final:
                 final_text = "".join(accumulated_text)
@@ -86,7 +123,7 @@ class JarvisCore:
                     text=chunk.text,
                     is_final=True,
                     intent=intent,
-                    action_proposal=action_proposal
+                    action_proposal=validated_proposal or action_proposal
                 )
             else:
                 yield chunk
