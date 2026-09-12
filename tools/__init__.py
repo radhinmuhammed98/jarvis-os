@@ -4,6 +4,7 @@ JARVIS Tool Subsystem Initialization
 
 from tools.base import BaseTool, ToolResult
 from tools.builtin import SystemInfoTool, TimeTool, EchoTool, MathSandboxTool
+from tools.computer import AppDiscoveryTool, AppLaunchTool, AppCloseTool, WindowControlTool, VolumeControlTool
 from tools.registry import ToolRegistry
 from tools.permissions import PermissionPolicy
 from tools.audit import AuditLogger, AuditRecord
@@ -17,6 +18,11 @@ __all__ = [
     "TimeTool",
     "EchoTool",
     "MathSandboxTool",
+    "AppDiscoveryTool",
+    "AppLaunchTool",
+    "AppCloseTool",
+    "WindowControlTool",
+    "VolumeControlTool",
     "ToolRegistry",
     "PermissionPolicy",
     "AuditLogger",
