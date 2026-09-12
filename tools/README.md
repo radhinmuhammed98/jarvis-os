@@ -16,3 +16,27 @@ The **Tools** subsystem provides a secure, declarative, extensible framework for
 - `system_info`: Returns basic OS and platform details.
 - `time`: Returns system time and ISO string.
 - `echo`: Returns supplied message string.
+# JARVIS Tool Factory (`tools/factory.py`)
+
+The **Tool Factory** dynamically generates, audits, sandbox-tests, and registers new tools when a requested capability is missing from the Tool Registry.
+
+## Generation Pipeline
+
+```text
+Missing Capability Request
+          │
+          ▼
+    CapabilitySpec
+          │
+          ▼
+ Generated Manifest + Code
+          │
+          ▼
+   Static Security Audit (Prohibited Imports Check)
+          │
+          ▼
+ Sandbox Unit Test Execution
+          │
+          ▼
+ Local Storage + Tool Registry Registration
+```
