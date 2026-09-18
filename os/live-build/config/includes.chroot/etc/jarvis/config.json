@@ -1,6 +1,6 @@
 {
   "system_name": "JARVIS OS",
-  "version": "0.1.0-milestone1",
+  "version": "0.1.0-milestone9",
   "auto_boot": true,
   "subsystems": {
     "core": true,
@@ -9,6 +9,20 @@
     "sandbox": true,
     "memory": true,
     "tools": true
+  },
+  "voice": {
+    "wake_phrase": "JARVIS",
+    "wake_sensitivity": 0.7,
+    "listening_timeout": 5.0,
+    "follow_up_mode": true,
+    "audio": {
+      "sample_rate": 16000,
+      "channels": 1,
+      "chunk_size": 1024,
+      "input_device_id": null,
+      "output_device_id": null,
+      "vad_threshold": 0.5
+    }
   },
   "log_level": "INFO"
 }

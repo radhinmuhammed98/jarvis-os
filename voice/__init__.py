@@ -2,7 +2,10 @@
 JARVIS Voice Subsystem
 """
 
-from voice.types import AudioConfig, AudioChunk, TranscriptionResult, TTSChunk
+from voice.types import (
+    AudioConfig, AudioChunk, TranscriptionResult, TTSChunk,
+    VoiceState, VoiceStateMachine, BaseWakeWordDetector, MockWakeWordDetector
+)
 from voice.capture import BaseAudioCapture, MockAudioCapture
 from voice.vad import BaseVAD, SimpleVAD
 from voice.stt import BaseSTT, MockSTT
@@ -14,6 +17,10 @@ __all__ = [
     "AudioChunk",
     "TranscriptionResult",
     "TTSChunk",
+    "VoiceState",
+    "VoiceStateMachine",
+    "BaseWakeWordDetector",
+    "MockWakeWordDetector",
     "BaseAudioCapture",
     "MockAudioCapture",
     "BaseVAD",

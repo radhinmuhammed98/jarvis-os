@@ -18,6 +18,14 @@ JARVIS OS is designed as an agentic operating system where the primary interface
    - PipeWire / ALSA audio backend for low-latency microphone input and speaker output.
    - NetworkManager / systemd-networkd for automatic connectivity.
 
-4. **JARVIS Subsystems (Core, Voice, Agent, Sandbox, Memory, Tools)**
+4. **JARVIS Voice & Boot Integration (`voice/`)**
+   - Always-on background systemd service (`jarvis-voice.service`).
+   - Replaceable wake-word detector interface (`BaseWakeWordDetector`).
+   - Explicit state machine (`OFF` -> `INITIALIZING` -> `IDLE` -> `WAKE_DETECTED` -> `LISTENING` -> `PROCESSING` -> `SPEAKING` -> `INTERRUPTED`).
+   - Microphone discovery, automatic device selection, and graceful offline fallback.
+   - Streaming STT, TTS, listening timeout, follow-up conversation mode, and barge-in speech interruption.
+
+5. **JARVIS Subsystems (Core, Agent, Sandbox, Memory, Tools)**
    - Modular Python-native services configured to start post-boot.
+   - Strict Intent Engine + Validation Gate + Permission Policy security pipeline before tool execution.
    - Isolated sandbox layer for agent code execution.
