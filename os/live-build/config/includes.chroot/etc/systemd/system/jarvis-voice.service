@@ -1,0 +1,21 @@
+[Unit]
+Description=JARVIS OS Always-On Voice Subsystem & Wake Word Service
+After=multi-user.target sound.target jarvis-system.service
+Wants=sound.target
+
+[Service]
+Type=simple
+Restart=always
+RestartSec=3s
+User=jarvis
+Group=jarvis
+ExecStart=/usr/bin/python3 -m voice.pipeline
+StandardOutput=journal
+StandardError=journal
+NoNewPrivileges=true
+ProtectSystem=full
+ProtectHome=read-only
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target
