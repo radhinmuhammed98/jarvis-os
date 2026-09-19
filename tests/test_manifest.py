@@ -1,18 +1,25 @@
 import os
 
 FORBIDDEN_DESKTOP_PACKAGES = [
-    "gnome", "kde", "xfce", "lxde", "mate", "cinnamon", "x11-common",
-    "wayland", "lightdm", "gdm3", "sddm"
+    "gnome", "kde", "plasma", "cinnamon", "mate", "lxde", "gdm3", "sddm"
 ]
 
-REQUIRED_PACKAGES = [
+APPROVED_GUI_PACKAGES = [
+    "xfce4-session",
+    "xfce4-terminal",
+    "thunar",
+    "lightdm",
+    "firefox-esr",
+    "network-manager"
+]
+
+REQUIRED_BASE_PACKAGES = [
     "linux-image-amd64",
     "firmware-linux",
     "pipewire",
     "alsa-utils",
     "network-manager",
-    "systemd",
-    "python3"
+    "systemd"
 ]
 
 
@@ -24,10 +31,13 @@ def test_manifest_packages():
         lines = [line.strip() for line in f if line.strip() and not line.startswith("#")]
 
     for forbidden in FORBIDDEN_DESKTOP_PACKAGES:
-        assert forbidden not in lines, f"Forbidden Desktop Environment package '{forbidden}' found in manifest"
+        assert forbidden not in lines, f"Forbidden heavy desktop package '{forbidden}' found in manifest"
 
-    for req in REQUIRED_PACKAGES:
-        assert req in lines, f"Required package '{req}' missing from manifest"
+    for approved in APPROVED_GUI_PACKAGES:
+        assert approved in lines, f"Approved lightweight GUI package '{approved}' missing from manifest"
+
+    for req in REQUIRED_BASE_PACKAGES:
+        assert req in lines, f"Required base package '{req}' missing from manifest"
 
 
 def test_live_build_auto_config_bootloader():

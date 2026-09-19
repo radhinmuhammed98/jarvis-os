@@ -1,8 +1,7 @@
-# ==============================================================================
-# JARVIS OS - Minimal Package Manifest
-# Milestone 01: Kernel, Firmware, Audio, Networking, System Core
-# NO Desktop Environment / NO GUI
-# ==============================================================================
+# =======================================================================
+# JARVIS OS - Package Manifest
+# Milestone 10A: Kernel, Firmware, Audio, Networking, Core, Lightweight XFCE & Firefox
+# ======================================================================
 
 # Linux Kernel & Core Firmware
 linux-image-amd64
@@ -32,6 +31,7 @@ procps
 
 # Networking & Connectivity
 network-manager
+network-manager-gnome
 iproute2
 iputils-ping
 wireless-tools
@@ -48,3 +48,15 @@ python3
 python3-pip
 python3-venv
 jq
+
+# Milestone 10A: Lightweight XFCE Desktop, Display Manager & Browser
+xserver-xorg
+xfce4-session
+xfwm4
+xfce4-panel
+xfdesktop4
+thunar
+xfce4-terminal
+lightdm
+lightdm-gtk-greeter
+firefox-esr
