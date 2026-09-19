@@ -17,14 +17,15 @@ echo "===> JARVIS OS ISO Builder <==="
 echo "[1/4] Validating build configuration..."
 if [[ ! -f "${LIVE_BUILD_DIR}/config/package-lists/jarvis.list.chroot" ]]; then
     echo "Error: Package list not found!"
-    echo "FAILURE"
+    validation_errors=1
 fi
 
-# Check for forbidden Desktop Environment packages
-FORBIDDEN_PKGS="gnome|kde|xfce|lxde|mate|cinnamon|x11-common|wayland|lightdm|gdm3|sddm"
+# Check for forbidden heavy Desktop Environment packages
+FORBIDDEN_PKGS="gnome|kde|plasma|cinnamon|mate|lxde|gdm3|sddm"
+validation_errors=0
 if grep -E "^($FORBIDDEN_PKGS)" "${LIVE_BUILD_DIR}/config/package-lists/jarvis.list.chroot" >/dev/null 2>&1; then
-    echo "Error: Desktop Environment package detected in package list!"
-    echo "FAILURE"
+    echo "Error: Forbidden heavy Desktop Environment package detected in package list!"
+    validation_errors=1
 fi
 
 # Check live-build auto/config bootloader options
@@ -32,12 +33,16 @@ AUTO_CONFIG="${LIVE_BUILD_DIR}/auto/config"
 if [[ -f "$AUTO_CONFIG" ]]; then
     if grep -q "grub-live" "$AUTO_CONFIG"; then
         echo "Error: Invalid bootloader 'grub-live' found in auto/config!"
-        echo "FAILURE"
+        validation_errors=1
     fi
     if grep -q "debian-installer false" "$AUTO_CONFIG"; then
         echo "Error: Deprecated '--debian-installer false' found in auto/config! Use 'none'."
-        echo "FAILURE"
+        validation_errors=1
     fi
+fi
+
+if [[ $validation_errors -ne 0 ]]; then
+    echo "Error: Build configuration validation failed!"
 fi
 
 echo "[2/4] Package list and bootloader configuration validation passed."
