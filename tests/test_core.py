@@ -1,5 +1,5 @@
 import pytest
-from core.types import Role, Message, IntentCategory, ActionProposal
+from core.types import Role, Message
 from core.brain import BaseBrain
 from core.providers.mock import MockBrain
 from core.providers.ollama import OllamaBrain
@@ -13,14 +13,6 @@ def test_mock_brain_generation():
     resp = brain.generate_response([msg])
     assert "Received 'Hello JARVIS'" in resp.text
     assert resp.is_final is True
-
-def test_mock_brain_intent_and_action():
-    brain = MockBrain()
-    intent, action = brain.extract_intent_and_action("run ls -la", [])
-    assert intent.category == IntentCategory.ACTION_REQUEST
-    assert action is not None
-    assert action.action_type == "shell_execution"
-    assert action.requires_confirmation is True
 
 def test_conversation_context_trimming():
     ctx = ConversationContext(max_messages=3)

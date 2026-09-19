@@ -3,8 +3,8 @@ Brain Abstraction Interface for Local AI Inference Engines
 """
 
 from abc import ABC, abstractmethod
-from typing import List, Generator, Optional, Dict, Any
-from core.types import Message, ResponseChunk, Intent, ActionProposal
+from typing import List, Generator, Optional
+from core.types import Message, ResponseChunk
 
 class BaseBrain(ABC):
     """
@@ -29,16 +29,4 @@ class BaseBrain(ABC):
         system_prompt: Optional[str] = None
     ) -> Generator[ResponseChunk, None, None]:
         """Stream response chunks in real-time."""
-        pass
-
-    @abstractmethod
-    def extract_intent_and_action(
-        self,
-        user_input: str,
-        context: List[Message]
-    ) -> tuple[Intent, Optional[ActionProposal]]:
-        """
-        Analyze user input to classify Intent and propose ActionProposal if applicable.
-        NOTE: Never executes the action.
-        """
         pass
