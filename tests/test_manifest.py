@@ -15,6 +15,7 @@ REQUIRED_PACKAGES = [
     "python3"
 ]
 
+
 def test_manifest_packages():
     manifest_path = "os/live-build/config/package-lists/jarvis.list.chroot"
     assert os.path.isfile(manifest_path), "Manifest file does not exist"
@@ -27,3 +28,16 @@ def test_manifest_packages():
 
     for req in REQUIRED_PACKAGES:
         assert req in lines, f"Required package '{req}' missing from manifest"
+
+
+def test_live_build_auto_config_bootloader():
+    config_path = "os/live-build/auto/config"
+    assert os.path.isfile(config_path), "live-build auto/config script does not exist"
+
+    with open(config_path, "r") as f:
+        content = f.read()
+
+    assert "grub-live" not in content, "Invalid bootloader 'grub-live' found in auto/config"
+    assert "debian-installer false" not in content, "Deprecated '--debian-installer false' found in auto/config"
+    assert "--bootloader syslinux" in content, "Expected '--bootloader syslinux' in auto/config"
+    assert "--debian-installer none" in content, "Expected '--debian-installer none' in auto/config"

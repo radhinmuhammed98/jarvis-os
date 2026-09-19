@@ -17,8 +17,8 @@ lb config noauto \
     --binary-images iso \
     --architectures amd64 \
     --linux-flavours amd64 \
-    --bootloader grub-live \
-    --debian-installer false \
+    --bootloader syslinux \
+    --debian-installer none \
     --apt-indices false \
     --memtest none \
     "${@}"
