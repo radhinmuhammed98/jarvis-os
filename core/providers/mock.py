@@ -2,9 +2,9 @@
 Mock Brain Provider for local offline testing and CI/CD validation.
 """
 
-from typing import List, Generator, Optional, Tuple
+from typing import List, Generator, Optional
 from core.brain import BaseBrain
-from core.types import Message, ResponseChunk, Intent, IntentCategory, ActionProposal
+from core.types import Message, ResponseChunk
 
 class MockBrain(BaseBrain):
     """Deterministically simulates AI responses and action proposals without external dependencies."""
@@ -23,31 +23,3 @@ class MockBrain(BaseBrain):
             is_last = (i == len(words) - 1)
             yield ResponseChunk(text=word + (" " if not is_last else ""), is_final=is_last)
 
-    def extract_intent_and_action(
-        self, user_input: str, context: List[Message]
-    ) -> Tuple[Intent, Optional[ActionProposal]]:
-        lowered = user_input.lower()
-        if "run" in lowered or "execute" in lowered or "list files" in lowered:
-            intent = Intent(
-                category=IntentCategory.ACTION_REQUEST,
-                confidence=0.95,
-                summary="User requested file listing or command execution.",
-                parameters={"raw": user_input}
-            )
-            action = ActionProposal(
-                action_type="shell_execution",
-                description="List directory contents",
-                target="local_system",
-                parameters={"command": "ls -la"},
-                risk_level="low",
-                requires_confirmation=True
-            )
-            return intent, action
-
-        intent = Intent(
-            category=IntentCategory.CONVERSATION,
-            confidence=0.99,
-            summary="Standard conversational input",
-            parameters={}
-        )
-        return intent, None

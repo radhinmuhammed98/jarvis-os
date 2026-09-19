@@ -6,10 +6,10 @@ import json
 import logging
 import urllib.request
 import urllib.error
-from typing import List, Generator, Optional, Tuple, Dict, Any
+from typing import List, Generator, Optional, Dict, Any
 
 from core.brain import BaseBrain
-from core.types import Message, ResponseChunk, Intent, IntentType, ActionProposal, Role
+from core.types import Message, ResponseChunk, Role
 
 logger = logging.getLogger("jarvis-ollama-provider")
 
@@ -62,49 +62,6 @@ class OllamaBrain(BaseBrain):
         except Exception as e:
             logger.error(f"Ollama streaming failed: {e}")
             yield ResponseChunk(text=f"[JARVIS Error: Connection to local model failed: {e}]", is_final=True)
-
-    def extract_intent_and_action(
-        self, user_input: str, context: List[Message]
-    ) -> Tuple[Intent, Optional[ActionProposal]]:
-        # Structured intent parsing system prompt
-        sys_prompt = (
-            "You are JARVIS OS Intent Extractor. Analyze the user prompt.\n"
-            "Respond ONLY in valid JSON format:\n"
-            '{"intent_type": "conversation"|"system_command"|"file_operation"|"code_execution", '
-            '"confidence": 0.0-1.0, "summary": "...", "action_proposed": false|true, '
-            '"action": {"action_type": "...", "description": "...", "target": "...", "parameters": {}, "risk_level": "low"|"medium"|"high"}}'
-        )
-        msg = Message(role=Role.USER, content=user_input)
-        chunk = self.generate_response([msg], system_prompt=sys_prompt)
-
-        try:
-            parsed = json.loads(chunk.text)
-            intent = Intent(
-                intent_type=IntentType(parsed.get("intent_type", "conversation")),
-                confidence=float(parsed.get("confidence", 0.8)),
-                summary=parsed.get("summary", "Extracted intent"),
-                parameters=parsed.get("parameters", {})
-            )
-            action = None
-            if parsed.get("action_proposed") and "action" in parsed:
-                act = parsed["action"]
-                action = ActionProposal(
-                    action_type=act.get("action_type", "unknown"),
-                    description=act.get("description", ""),
-                    target=act.get("target", ""),
-                    parameters=act.get("parameters", {}),
-                    risk_level=act.get("risk_level", "medium"),
-                    requires_confirmation=True
-                )
-            return intent, action
-        except Exception:
-            # Fallback to standard conversational intent
-            return Intent(
-                intent_type=IntentType.CONVERSATION,
-                confidence=0.9,
-                summary="Default conversational query",
-                parameters={}
-            ), None
 
     def _build_payload(self, messages: List[Message], system_prompt: Optional[str], stream: bool) -> Dict[str, Any]:
         formatted_msgs = []
