@@ -1,0 +1,26 @@
+#!/bin/sh
+set -e
+
+echo "[JARVIS HOOK] Setting up JARVIS OS boot environment..."
+
+# 1. Ensure jarvis system user and group exist
+if ! getent group jarvis >/dev/null 2>&1; then
+    groupadd -r jarvis
+fi
+
+if ! getent passwd jarvis >/dev/null 2>&1; then
+    useradd -r -g jarvis -G audio -d /var/lib/jarvis -s /bin/false -c "JARVIS OS Service User" jarvis
+fi
+
+# 2. Ensure systemd services are enabled
+mkdir -p /etc/systemd/system/multi-user.target.wants
+
+if [ -f /etc/systemd/system/jarvis-system.service ]; then
+    ln -sf /etc/systemd/system/jarvis-system.service /etc/systemd/system/multi-user.target.wants/jarvis-system.service
+fi
+
+if [ -f /etc/systemd/system/jarvis-voice.service ]; then
+    ln -sf /etc/systemd/system/jarvis-voice.service /etc/systemd/system/multi-user.target.wants/jarvis-voice.service
+fi
+
+echo "[JARVIS HOOK] Boot-time service integration complete."

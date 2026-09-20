@@ -1,7 +1,8 @@
 [Unit]
 Description=JARVIS OS Always-On Voice Subsystem & Wake Word Service
-After=multi-user.target sound.target jarvis-system.service
-Wants=sound.target
+Requires=jarvis-system.service
+After=jarvis-system.service sound.target network.target
+Wants=sound.target network.target
 
 [Service]
 Type=simple
