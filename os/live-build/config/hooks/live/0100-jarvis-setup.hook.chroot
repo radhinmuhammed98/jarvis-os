@@ -12,7 +12,11 @@ if ! getent passwd jarvis >/dev/null 2>&1; then
     useradd -r -g jarvis -G audio -d /var/lib/jarvis -s /bin/false -c "JARVIS OS Service User" jarvis
 fi
 
-# 2. Ensure systemd services are enabled
+# 2. Ensure model and state directories exist with correct permissions
+mkdir -p /var/lib/jarvis/models /var/log/jarvis
+chown -R jarvis:jarvis /var/lib/jarvis /var/log/jarvis || true
+
+# 3. Ensure systemd services are enabled
 mkdir -p /etc/systemd/system/multi-user.target.wants
 
 if [ -f /etc/systemd/system/jarvis-system.service ]; then

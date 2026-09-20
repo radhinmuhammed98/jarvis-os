@@ -1,14 +1,16 @@
 import os
+import sys
 import subprocess
 import pytest
 
 CHROOT_ROOT = "os/live-build/config/includes.chroot"
 SYSTEMD_DIR = os.path.join(CHROOT_ROOT, "etc/systemd/system")
 WANTS_DIR = os.path.join(SYSTEMD_DIR, "multi-user.target.wants")
+TARGET_PACKAGES_DIR = os.path.join(CHROOT_ROOT, "usr/local/lib/python3/dist-packages")
 
 
 def test_services_enabled_in_target_filesystem():
-    """Requirement 1, 2, 12: Prove both jarvis services are enabled in multi-user.target.wants."""
+    """Verify both jarvis-system and jarvis-voice services are enabled in multi-user.target.wants."""
     assert os.path.isdir(WANTS_DIR), f"Directory {WANTS_DIR} does not exist"
 
     sys_link = os.path.join(WANTS_DIR, "jarvis-system.service")
@@ -19,7 +21,7 @@ def test_services_enabled_in_target_filesystem():
 
 
 def test_service_ordering_and_dependencies():
-    """Requirement 3, 4, 8, 12: Prove jarvis-system is ordered before jarvis-voice and no After=multi-user.target exists."""
+    """Verify jarvis-system is ordered before jarvis-voice and no After=multi-user.target exists."""
     sys_path = os.path.join(SYSTEMD_DIR, "jarvis-system.service")
     voice_path = os.path.join(SYSTEMD_DIR, "jarvis-voice.service")
 
@@ -29,42 +31,89 @@ def test_service_ordering_and_dependencies():
     with open(voice_path, "r") as f:
         voice_content = f.read()
 
-    # Neither service should rely on After=multi-user.target
     assert "After=multi-user.target" not in sys_content, "jarvis-system.service must not rely on After=multi-user.target"
     assert "After=multi-user.target" not in voice_content, "jarvis-voice.service must not rely on After=multi-user.target"
 
-    # Dependency: jarvis-system -> jarvis-voice
     assert "Requires=jarvis-system.service" in voice_content, "jarvis-voice.service must require jarvis-system.service"
     assert "After=" in voice_content and "jarvis-system.service" in voice_content, "jarvis-voice.service must be ordered After jarvis-system.service"
 
 
 def test_required_executables_modules_users_and_configs():
-    """Requirement 5, 6, 7, 12: Prove executable, python module, user/group config, and config.json exist."""
+    """Verify executables, complete python modules, user/group config, model/log dirs, and config.json exist."""
     init_script = os.path.join(CHROOT_ROOT, "usr/local/bin/jarvis-init")
     assert os.path.isfile(init_script), f"{init_script} missing"
     assert os.access(init_script, os.X_OK), f"{init_script} is not executable"
 
-    # Check python voice module
-    voice_pkg = os.path.join(CHROOT_ROOT, "usr/local/lib/python3/dist-packages/voice")
-    assert os.path.isdir(voice_pkg), "Python voice package missing in target filesystem"
-    assert os.path.isfile(os.path.join(voice_pkg, "pipeline.py")), "voice.pipeline missing"
+    with open(init_script, "r") as f:
+        init_content = f.read()
+    assert "P_CMD" not in init_content, "Obfuscated P_CMD string found in jarvis-init"
+    assert "python3 -m system.init" in init_content, "jarvis-init must launch python3 -m system.init"
 
-    # Check config.json
+    required_modules = ["agent", "core", "memory", "sandbox", "system", "tools", "voice"]
+    for mod in required_modules:
+        mod_dir = os.path.join(TARGET_PACKAGES_DIR, mod)
+        assert os.path.isdir(mod_dir), f"Required Python module package {mod} missing in target filesystem at {mod_dir}"
+        assert os.path.isfile(os.path.join(mod_dir, "__init__.py")), f"__init__.py missing in package {mod}"
+
+    assert os.path.isfile(os.path.join(TARGET_PACKAGES_DIR, "system/init.py")), "system.init module missing"
+    assert os.path.isfile(os.path.join(TARGET_PACKAGES_DIR, "voice/pipeline.py")), "voice.pipeline module missing"
+
     cfg_file = os.path.join(CHROOT_ROOT, "etc/jarvis/config.json")
     assert os.path.isfile(cfg_file), "/etc/jarvis/config.json missing in target filesystem"
 
-    # Check sysusers configuration for jarvis user/group
     sysusers_file = os.path.join(CHROOT_ROOT, "etc/sysusers.d/jarvis.conf")
     assert os.path.isfile(sysusers_file), "/etc/sysusers.d/jarvis.conf missing"
+    with open(sysusers_file, "r") as f:
+        sysusers_content = f.read()
+    assert "u jarvis" in sysusers_content, "jarvis user not defined in sysusers.d"
+    assert "m jarvis audio" in sysusers_content or "g jarvis" in sysusers_content, "jarvis group not configured in sysusers.d"
 
-    # Check chroot setup hook
+    models_dir = os.path.join(CHROOT_ROOT, "var/lib/jarvis/models")
+    logs_dir = os.path.join(CHROOT_ROOT, "var/log/jarvis")
+    assert os.path.isdir(models_dir), f"Models directory {models_dir} missing in target filesystem"
+    assert os.path.isdir(logs_dir), f"Logs directory {logs_dir} missing in target filesystem"
+
     hook_file = "os/live-build/config/hooks/live/0100-jarvis-setup.hook.chroot"
     assert os.path.isfile(hook_file), f"{hook_file} missing"
     assert os.access(hook_file, os.X_OK), f"{hook_file} is not executable"
 
 
+def test_target_filesystem_python_imports():
+    """Verify python3 -c 'import system, core, voice, tools, agent, memory, sandbox' succeeds using target packages."""
+    env = os.environ.copy()
+    env["PYTHONPATH"] = os.path.abspath(TARGET_PACKAGES_DIR)
+
+    code = "import system, core, voice, tools, agent, memory, sandbox; print('IMPORT_ALL_SUCCESS')"
+
+    res = subprocess.run([sys.executable, "-c", code], env=env, capture_output=True, text=True)
+    assert res.returncode == 0, f"Failed to import modules from target filesystem: {res.stderr}"
+    assert "IMPORT_ALL_SUCCESS" in res.stdout + res.stderr
+
+
+def test_system_init_check_mode():
+    """Verify python3 -m system.init --check executes cleanly in target environment."""
+    env = os.environ.copy()
+    env["PYTHONPATH"] = os.path.abspath(TARGET_PACKAGES_DIR)
+
+    res = subprocess.run([sys.executable, "-m", "system.init", "--check"], env=env, capture_output=True, text=True)
+    assert res.returncode == 0, f"python3 -m system.init --check failed: {res.stderr}\nOutput: {res.stdout + res.stderr}"
+    assert "System layer check completed successfully" in res.stdout + res.stderr or "Initializing JARVIS OS System Layer" in res.stdout + res.stderr
+
+
+def test_jarvis_init_execution_in_target_environment():
+    """Verify /usr/local/bin/jarvis-init executes cleanly in target environment."""
+    env = os.environ.copy()
+    env["PYTHONPATH"] = os.path.abspath(TARGET_PACKAGES_DIR)
+
+    init_script = os.path.abspath(os.path.join(CHROOT_ROOT, "usr/local/bin/jarvis-init"))
+    res = subprocess.run([init_script], env=env, capture_output=True, text=True)
+
+    assert res.returncode == 0, f"jarvis-init failed to execute: {res.stderr}\nOutput: {res.stdout + res.stderr}"
+    assert "System Initialization Complete" in res.stdout + res.stderr or "JARVIS OS is ready" in res.stdout + res.stderr
+
+
 def test_security_hardening_and_non_root():
-    """Requirement 10, 11: Prove security hardening flags and non-root execution."""
+    """Verify security hardening directives for jarvis-voice.service."""
     voice_path = os.path.join(SYSTEMD_DIR, "jarvis-voice.service")
     with open(voice_path, "r") as f:
         voice_content = f.read()
@@ -78,7 +127,7 @@ def test_security_hardening_and_non_root():
 
 
 def test_no_unrelated_services_enabled():
-    """Requirement 12: Prove no unrelated custom services are enabled in multi-user.target.wants."""
+    """Verify no unrelated services are enabled in multi-user.target.wants."""
     enabled_files = set(os.listdir(WANTS_DIR))
     allowed_services = {"jarvis-system.service", "jarvis-voice.service"}
     unrelated = enabled_files - allowed_services
@@ -86,6 +135,6 @@ def test_no_unrelated_services_enabled():
 
 
 def test_build_iso_script_check():
-    """Requirement 14: Prove os/build_iso.sh --check passes."""
+    """Verify os/build_iso.sh --check passes without errors."""
     res = subprocess.run(["./os/build_iso.sh", "--check"], capture_output=True, text=True)
-    assert res.returncode == 0, f"build_iso.sh --check failed: {res.stderr}\nOutput: {res.stdout}"
+    assert res.returncode == 0, f"build_iso.sh --check failed: {res.stderr}\nOutput: {res.stdout + res.stderr}"
