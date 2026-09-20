@@ -91,17 +91,32 @@ for hardening in "NoNewPrivileges=true" "ProtectSystem=full" "ProtectHome=read-o
     fi
 done
 
-# Executable and Python module checks
-if [[ ! -x "${LIVE_BUILD_DIR}/config/includes.chroot/usr/local/bin/jarvis-init" ]]; then
+# Executable, config, and Python module checks
+INIT_SCRIPT="${LIVE_BUILD_DIR}/config/includes.chroot/usr/local/bin/jarvis-init"
+if [[ ! -x "$INIT_SCRIPT" ]]; then
     echo "Error: /usr/local/bin/jarvis-init missing or not executable!"
     validation_errors=1
 fi
 
-PY_VOICE="${LIVE_BUILD_DIR}/config/includes.chroot/usr/local/lib/python3/dist-packages/voice"
-if [[ ! -d "$PY_VOICE" ]]; then
-    echo "Error: Python voice package missing in target filesystem!"
+if grep -q "P_CMD" "$INIT_SCRIPT"; then
+    echo "Error: Obfuscated string bug found in /usr/local/bin/jarvis-init!"
     validation_errors=1
 fi
+
+CFG_FILE="${LIVE_BUILD_DIR}/config/includes.chroot/etc/jarvis/config.json"
+if [[ ! -f "$CFG_FILE" ]]; then
+    echo "Error: /etc/jarvis/config.json missing!"
+    validation_errors=1
+fi
+
+PY_PACKAGES_DIR="${LIVE_BUILD_DIR}/config/includes.chroot/usr/local/lib/python3/dist-packages"
+REQUIRED_MODS=("agent" "core" "memory" "sandbox" "system" "tools" "voice")
+for mod in "${REQUIRED_MODS[@]}"; do
+    if [[ ! -d "${PY_PACKAGES_DIR}/${mod}" ]]; then
+        echo "Error: Python package '${mod}' missing in target filesystem at ${PY_PACKAGES_DIR}/${mod}!"
+        validation_errors=1
+    fi
+done
 
 if [[ $validation_errors -ne 0 ]]; then
     echo "Error: Build configuration validation failed!"
