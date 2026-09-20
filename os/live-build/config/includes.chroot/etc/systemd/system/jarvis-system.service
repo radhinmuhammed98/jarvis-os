@@ -1,6 +1,7 @@
 [Unit]
 Description=JARVIS OS System Layer Service
-After=multi-user.target sound.target network.target
+ConditionPathExists=/usr/local/bin/jarvis-init
+After=sound.target network.target local-fs.target
 Wants=sound.target network.target
 
 [Service]
